@@ -166,9 +166,10 @@ func prepareBlocks() []string {
 }
 
 // Returns list of repeated string
-func getRepeated(name string, nbRepeats int) (result []string) {
+func getRepeated(name string, nbRepeats int) []string {
+	result := make([]string, nbRepeats)
 	for i := 0; i < nbRepeats; i++ {
-		result = append(result, name)
+		result[i] = name
 	}
 
 	return result
