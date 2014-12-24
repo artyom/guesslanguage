@@ -1,11 +1,16 @@
 package guesslanguage
 
 var (
-	blockRshift uint     = 4
-	blocks      []string = make([]string, 0x2fa2)
+	blockRshift uint = 4
+	blocks      []string
 )
 
 func init() {
+	blocks = prepareBlocks()
+}
+
+func prepareBlocks() []string {
+	blocks := make([]string, 0x2fa2)
 	copy(blocks[0x0:0x8], getRepeated("Basic Latin", 0x8))
 	copy(blocks[0x0:0x8], getRepeated("Basic Latin", 0x8))
 	copy(blocks[0x8:0x10], getRepeated("Extended Latin", 0x8))  // Latin-1 Supplement
@@ -157,6 +162,7 @@ func init() {
 	copy(blocks[0x2a70:0x2b74], getRepeated("CJK Unified Ideographs Extension C", 0x104))
 	copy(blocks[0x2b74:0x2b82], getRepeated("CJK Unified Ideographs Extension D", 0xe))
 	copy(blocks[0x2f80:0x2fa2], getRepeated("CJK Compatibility Ideographs Supplement", 0x22))
+	return blocks
 }
 
 // Returns list of repeated string
