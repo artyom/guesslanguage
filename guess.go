@@ -287,7 +287,7 @@ var (
 )
 
 func init() {
-	regexWords, _ = regexp.Compile(`(?:[^\d\s_-]|['])+`)
+	regexWords = regexp.MustCompile(`(?:[^\d\s_-]|['])+`)
 }
 
 // Return the ISO 639-1 language code.
