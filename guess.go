@@ -395,34 +395,43 @@ func guessLanguage(words []string, scripts []string) string {
 
 // Count the number of characters in each character block
 func getRuns(words []string) (relevantRuns []string) {
+	type scriptFreq struct {
+		name string
+		cnt  int
+	}
 	var (
-		runTypes     map[string]int = make(map[string]int)
-		nbTotalChars int            = 0
+		runTypes     = make([]*scriptFreq, 0, 1)
+		nbTotalChars = 0
 		charBlock    string
 		percentage   int
+		found        bool
 	)
 
 	for _, word := range words {
 		for _, char := range word {
 			charBlock = getBlock(char)
-
-			if _, ok := runTypes[charBlock]; ok {
-				runTypes[charBlock]++
-			} else {
-				runTypes[charBlock] = 1
+			found = false
+			for _, item := range runTypes {
+				if item.name == charBlock {
+					item.cnt++
+					found = true
+					break
+				}
 			}
-
+			if !found {
+				runTypes = append(runTypes, &scriptFreq{name: charBlock, cnt: 1})
+			}
 			nbTotalChars++
 		}
 	}
 
 	// return run types that used for 40% or more of the string
 	// return Basic Latin if found more than 15%
-	for key, value := range runTypes {
-		percentage = value * 100
+	for _, item := range runTypes {
+		percentage = item.cnt * 100
 
-		if percentage >= 40 || percentage >= 15 && key == "Basic Latin" {
-			relevantRuns = append(relevantRuns, key)
+		if percentage >= 40 || percentage >= 15 && item.name == "Basic Latin" {
+			relevantRuns = append(relevantRuns, item.name)
 		}
 	}
 

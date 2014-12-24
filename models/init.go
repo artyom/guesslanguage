@@ -21,7 +21,7 @@ func GetModels() map[string]map[string]int {
 // Create a list of trigrams in content sorted by frequency.
 func GetOrderedModel(content string) []string {
 	var (
-		trigrams map[string]int = make(map[string]int)
+		trigrams map[string]int = make(map[string]int, len(content)/3)
 		trigram  string
 		runes    []rune = []rune(strings.ToLower(content))
 	)
