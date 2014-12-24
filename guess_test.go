@@ -1,9 +1,10 @@
 package guesslanguage
 
 import (
-	"github.com/endeveit/guesslanguage/models"
 	"strings"
 	"testing"
+
+	"github.com/endeveit/guesslanguage/models"
 )
 
 func Test_getRuns(t *testing.T) {
@@ -21,8 +22,8 @@ func Test_getRuns(t *testing.T) {
 
 	words = strings.Split("abcdééé", " ")
 	runs = getRuns(words)
-	if len(runs) != 2 || !keyExists("Basic Latin", runs) || !keyExists("Extended Latin", runs) {
-		t.Errorf("Runs must contain both 'Basic Latin' and 'Extended Latin'")
+	if len(runs) != 2 || !keyExists("Basic Latin", runs) || !keyExists("Latin-1 Supplement", runs) {
+		t.Errorf("Runs must contain both 'Basic Latin' and 'Latin-1 Supplement'")
 	}
 
 	s := "Сайлау нәтижесінде дауыстардың басым бөлігін ел премьер " +

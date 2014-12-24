@@ -7,10 +7,11 @@ package guesslanguage
 
 import (
 	"errors"
-	"github.com/endeveit/guesslanguage/models"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/endeveit/guesslanguage/models"
 )
 
 var (
@@ -341,7 +342,9 @@ func guessLanguage(words []string, scripts []string) string {
 		return "el"
 	}
 
-	if keyExists("Kana", scripts) {
+	if keyExists("Hiragana", scripts) ||
+		keyExists("Katakana", scripts) ||
+		keyExists("Katakana Phonetic Extensions", scripts) {
 		return "ja"
 	}
 
@@ -373,7 +376,8 @@ func guessLanguage(words []string, scripts []string) string {
 		}
 	}
 
-	if keyExists("Extended Latin", scripts) {
+	if keyExists("Latin-1 Supplement", scripts) ||
+		keyExists("Latin Extended-A", scripts) {
 		latinLang := getFromModel(words, codesExtendedLatin)
 		if latinLang == "pt" {
 			return getFromModel(words, codesPt)
