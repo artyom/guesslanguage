@@ -7,6 +7,21 @@ import (
 	"github.com/endeveit/guesslanguage/models"
 )
 
+func Benchmark_Guess(b *testing.B) {
+	s := "Сайлау нәтижесінде дауыстардың басым бөлігін ел премьер " +
+		"министрі Виктор Янукович пен оның қарсыласы, оппозиция " +
+		"жетекшісі Виктор Ющенко алды."
+	b.SetBytes(int64(len(s)))
+	for i := 0; i < b.N; i++ {
+		switch lang, err := Guess(s); {
+		case err != nil:
+			b.Fatal(err)
+		case lang != "kk":
+			b.Fatalf("Invalid language detected: %q", lang)
+		}
+	}
+}
+
 func Test_getRuns(t *testing.T) {
 	var (
 		words []string
