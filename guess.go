@@ -9,12 +9,29 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/endeveit/guesslanguage/models"
 )
 
+func init() {
+	// put unicode.Scripts map values into slice as iterating over slice is
+	// faster than over map. TODO: as further optimization, slice can be
+	// sorted to place most expected or frequently used scripts at the
+	// beginning
+	knownScripts = make([]*unicode.RangeTable, 0, len(unicode.Scripts))
+	knownScripts = append(knownScripts, unicode.Latin, unicode.Cyrillic)
+	for _, s := range unicode.Scripts {
+		if s == unicode.Latin || s == unicode.Cyrillic {
+			continue
+		}
+		knownScripts = append(knownScripts, s)
+	}
+}
+
 var (
+	knownScripts    []*unicode.RangeTable
 	regexWords      *regexp.Regexp
 	maxLength       int      = 4096
 	maxDistance     int      = maxLength * 300
@@ -330,96 +347,91 @@ func GuessName(text string) string {
 }
 
 // Identify the language.
-func guessLanguage(words []string, scripts []string) string {
-	if keyExists("Hangul Syllables", scripts) ||
-		keyExists("Hangul Jamo", scripts) ||
-		keyExists("Hangul Compatibility Jamo", scripts) ||
-		keyExists("Hangul", scripts) {
+func guessLanguage(words []string, scripts []*unicode.RangeTable) string {
+	if keyExists(unicode.Hangul, scripts) {
 		return "ko"
 	}
 
-	if keyExists("Greek and Coptic", scripts) {
+	if keyExists(unicode.Greek, scripts) || keyExists(unicode.Coptic, scripts) {
 		return "el"
 	}
 
-	if keyExists("Hiragana", scripts) ||
-		keyExists("Katakana", scripts) ||
-		keyExists("Katakana Phonetic Extensions", scripts) {
+	if keyExists(unicode.Hiragana, scripts) ||
+		keyExists(unicode.Katakana, scripts) {
 		return "ja"
 	}
 
-	if keyExists("CJK Unified Ideographs", scripts) ||
-		keyExists("Bopomofo", scripts) ||
-		keyExists("Bopomofo Extended", scripts) ||
-		keyExists("KangXi Radicals", scripts) {
+	if keyExists(unicode.Han, scripts) ||
+		keyExists(unicode.Bopomofo, scripts) {
 		return "zh"
 	}
 
-	if keyExists("Cyrillic", scripts) {
+	if keyExists(unicode.Cyrillic, scripts) {
 		return getFromModel(words, codesCyrillic)
 	}
 
-	if keyExists("Arabic", scripts) ||
-		keyExists("Arabic Presentation Forms-A", scripts) ||
-		keyExists("Arabic Presentation Forms-B", scripts) {
+	if keyExists(unicode.Arabic, scripts) {
 		return getFromModel(words, codesArabic)
 	}
 
-	if keyExists("Devanagari", scripts) {
+	if keyExists(unicode.Devanagari, scripts) {
 		return getFromModel(words, codesDevanagari)
 	}
 
 	// Try languages with unique scripts
 	for blockName, langName := range singletons {
-		if keyExists(blockName, scripts) {
+		if keyExists(unicode.Scripts[blockName], scripts) {
 			return langName
 		}
 	}
 
-	if keyExists("Latin-1 Supplement", scripts) ||
-		keyExists("Latin Extended-A", scripts) {
-		latinLang := getFromModel(words, codesExtendedLatin)
+	if keyExists(unicode.Latin, scripts) {
+		latinLang := getFromModel(words, codesAllLatin)
 		if latinLang == "pt" {
 			return getFromModel(words, codesPt)
-		} else {
-			return latinLang
 		}
-	}
-
-	if keyExists("Basic Latin", scripts) {
-		return getFromModel(words, codesAllLatin)
+		return latinLang
 	}
 
 	return unknownLanguage
 }
 
 // Count the number of characters in each character block
-func getRuns(words []string) (relevantRuns []string) {
+func getRuns(words []string) (relevantRuns []*unicode.RangeTable) {
 	type scriptFreq struct {
-		name string
-		cnt  int
+		block *unicode.RangeTable
+		cnt   int
 	}
 	var (
 		runTypes     = make([]*scriptFreq, 0, 1)
 		nbTotalChars = 0
-		charBlock    string
+		charBlock    *unicode.RangeTable
 		percentage   int
 		found        bool
 	)
 
 	for _, word := range words {
 		for _, char := range word {
-			charBlock = getBlock(char)
+			charBlock = nil
+			for _, s := range knownScripts {
+				if unicode.Is(s, char) {
+					charBlock = s
+					break
+				}
+			}
+			if charBlock == nil {
+				continue
+			}
 			found = false
 			for _, item := range runTypes {
-				if item.name == charBlock {
+				if item.block == charBlock {
 					item.cnt++
 					found = true
 					break
 				}
 			}
 			if !found {
-				runTypes = append(runTypes, &scriptFreq{name: charBlock, cnt: 1})
+				runTypes = append(runTypes, &scriptFreq{block: charBlock, cnt: 1})
 			}
 			nbTotalChars++
 		}
@@ -430,8 +442,8 @@ func getRuns(words []string) (relevantRuns []string) {
 	for _, item := range runTypes {
 		percentage = item.cnt * 100
 
-		if percentage >= 40 || percentage >= 15 && item.name == "Basic Latin" {
-			relevantRuns = append(relevantRuns, item.name)
+		if percentage >= 40 || percentage >= 15 && item.block == unicode.Latin {
+			relevantRuns = append(relevantRuns, item.block)
 		}
 	}
 
@@ -439,7 +451,7 @@ func getRuns(words []string) (relevantRuns []string) {
 }
 
 // Check if key exists
-func keyExists(a string, list []string) bool {
+func keyExists(a *unicode.RangeTable, list []*unicode.RangeTable) bool {
 	for _, b := range list {
 		if b == a {
 			return true

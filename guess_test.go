@@ -3,6 +3,7 @@ package guesslanguage
 import (
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/endeveit/guesslanguage/models"
 )
@@ -25,20 +26,20 @@ func Benchmark_Guess(b *testing.B) {
 func Test_getRuns(t *testing.T) {
 	var (
 		words []string
-		runs  []string
+		runs  []*unicode.RangeTable
 	)
 
 	words = strings.Split("This is a test of the language checker", " ")
 	runs = getRuns(words)
 
-	if !keyExists("Basic Latin", runs) {
-		t.Errorf("Runs must contain 'Basic Latin'")
+	if !keyExists(unicode.Latin, runs) {
+		t.Errorf("Runs must contain 'Latin'")
 	}
 
 	words = strings.Split("abcdééé", " ")
 	runs = getRuns(words)
-	if len(runs) != 2 || !keyExists("Basic Latin", runs) || !keyExists("Latin-1 Supplement", runs) {
-		t.Errorf("Runs must contain both 'Basic Latin' and 'Latin-1 Supplement'")
+	if len(runs) != 1 || !keyExists(unicode.Latin, runs) {
+		t.Errorf("Runs must contain 'Latin'")
 	}
 
 	s := "Сайлау нәтижесінде дауыстардың басым бөлігін ел премьер " +
@@ -46,7 +47,7 @@ func Test_getRuns(t *testing.T) {
 		"жетекшісі Виктор Ющенко алды."
 	words = strings.Split(s, " ")
 	runs = getRuns(words)
-	if !keyExists("Cyrillic", runs) {
+	if !keyExists(unicode.Cyrillic, runs) {
 		t.Errorf("Runs musts contain 'Cyrillic'")
 	}
 }
@@ -55,23 +56,23 @@ func Test_GetOrderedModel(t *testing.T) {
 	var om []string
 
 	om = models.GetOrderedModel("abc")
-	if len(om) != 1 || !keyExists("abc", om) {
+	if len(om) != 1 || !strKeyExists("abc", om) {
 		t.Errorf("Model must be [abc]")
 	}
 
 	om = models.GetOrderedModel("abca")
-	if len(om) != 2 || !keyExists("abc", om) || !keyExists("bca", om) {
+	if len(om) != 2 || !strKeyExists("abc", om) || !strKeyExists("bca", om) {
 		t.Errorf("Model must be [abc bca]")
 	}
 
 	om = models.GetOrderedModel("abcabdcab")
 	if len(om) != 6 ||
-		!keyExists("cab", om) ||
-		!keyExists("abc", om) ||
-		!keyExists("abd", om) ||
-		!keyExists("bca", om) ||
-		!keyExists("bdc", om) ||
-		!keyExists("dca", om) {
+		!strKeyExists("cab", om) ||
+		!strKeyExists("abc", om) ||
+		!strKeyExists("abd", om) ||
+		!strKeyExists("bca", om) ||
+		!strKeyExists("bdc", om) ||
+		!strKeyExists("dca", om) {
 		t.Errorf("Model must be [cab abc abd bca bdc dca]")
 	}
 }
@@ -135,4 +136,12 @@ func Test_Guess(t *testing.T) {
 	if GuessName(french) != nameMap["fr"] {
 		t.Error("Language name must be %s", nameMap["fr"])
 	}
+}
+func strKeyExists(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
