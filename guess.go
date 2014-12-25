@@ -470,7 +470,7 @@ func getFromModel(words []string, languages []string) (result string) {
 
 	var (
 		scores  map[string]int = make(map[string]int, len(languages))
-		model   []string       = models.GetOrderedModel(sample)
+		model                  = models.GetOrderedModel(sample)
 		minimal int            = maxDistance
 	)
 
@@ -489,9 +489,9 @@ func getFromModel(words []string, languages []string) (result string) {
 }
 
 // Calculate the distance to the known model.
-func getDistance(model []string, known_model map[string]int) int {
+func getDistance(model []models.Tg, known_model map[models.Tg]int) int {
 	var (
-		data []string
+		data []models.Tg
 		dist int
 		sub  int
 	)

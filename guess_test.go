@@ -52,27 +52,35 @@ func Test_getRuns(t *testing.T) {
 	}
 }
 
+func tg(s string) models.Tg {
+	var out models.Tg
+	for i, r := range s {
+		out[i] = r
+	}
+	return out
+}
+
 func Test_GetOrderedModel(t *testing.T) {
-	var om []string
+	var om []models.Tg
 
 	om = models.GetOrderedModel("abc")
-	if len(om) != 1 || !strKeyExists("abc", om) {
+	if len(om) != 1 || !hasElem(tg("abc"), om) {
 		t.Errorf("Model must be [abc]")
 	}
 
 	om = models.GetOrderedModel("abca")
-	if len(om) != 2 || !strKeyExists("abc", om) || !strKeyExists("bca", om) {
+	if len(om) != 2 || !hasElem(tg("abc"), om) || !hasElem(tg("bca"), om) {
 		t.Errorf("Model must be [abc bca]")
 	}
 
 	om = models.GetOrderedModel("abcabdcab")
 	if len(om) != 6 ||
-		!strKeyExists("cab", om) ||
-		!strKeyExists("abc", om) ||
-		!strKeyExists("abd", om) ||
-		!strKeyExists("bca", om) ||
-		!strKeyExists("bdc", om) ||
-		!strKeyExists("dca", om) {
+		!hasElem(tg("cab"), om) ||
+		!hasElem(tg("abc"), om) ||
+		!hasElem(tg("abd"), om) ||
+		!hasElem(tg("bca"), om) ||
+		!hasElem(tg("bdc"), om) ||
+		!hasElem(tg("dca"), om) {
 		t.Errorf("Model must be [cab abc abd bca bdc dca]")
 	}
 }
@@ -137,7 +145,7 @@ func Test_Guess(t *testing.T) {
 		t.Error("Language name must be %s", nameMap["fr"])
 	}
 }
-func strKeyExists(a string, list []string) bool {
+func hasElem(a models.Tg, list []models.Tg) bool {
 	for _, b := range list {
 		if b == a {
 			return true

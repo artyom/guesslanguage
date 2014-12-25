@@ -1,7 +1,7 @@
 package models
 
 func init() {
-	models["mk"] = map[string]int{
+	models["mk"] = compact(map[string]int{
 		"на ": 0,
 		" на": 1,
 		"та ": 2,
@@ -301,5 +301,5 @@ func init() {
 		" ве": 296,
 		" вм": 297,
 		" ги": 298,
-		" ду": 299}
+		" ду": 299})
 }

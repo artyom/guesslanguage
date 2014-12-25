@@ -5,35 +5,44 @@ import (
 	"strings"
 )
 
-var models map[string]map[string]int = make(map[string]map[string]int)
+var models = make(map[string]map[Tg]int)
+
+type Tg [3]rune
+
+// compact stores string-defined trigrams with their weight into rune arrays
+func compact(m map[string]int) map[Tg]int {
+	out := make(map[Tg]int, len(m))
+	for k, v := range m {
+		var t Tg
+		r := []rune(k)
+		t = Tg{r[0], r[1], r[2]}
+		out[t] = v
+	}
+	return out
+}
 
 // Struct used to sort trigrams
 type valSorter struct {
-	keys   []string
+	keys   []Tg
 	values []int
 }
 
 // Returns list of all models
-func GetModels() map[string]map[string]int {
+func GetModels() map[string]map[Tg]int {
 	return models
 }
 
 // Create a list of trigrams in content sorted by frequency.
-func GetOrderedModel(content string) []string {
-	var (
-		trigrams map[string]int = make(map[string]int, len(content)/3)
-		trigram  string
-		runes    []rune = []rune(strings.ToLower(content))
-	)
-
-	for i := 0; i < len(runes)-2; i++ {
-		trigram = string(runes[i : i+3])
-
-		if _, ok := trigrams[trigram]; ok {
-			trigrams[trigram]++
-		} else {
-			trigrams[trigram] = 1
+func GetOrderedModel(content string) []Tg {
+	trigrams := make(map[Tg]int, len(content)/3)
+	var r0, r1 rune
+	for i, r := range strings.ToLower(content) {
+		t := Tg{r0, r1, r}
+		r0, r1 = r1, r
+		if i < 2 {
+			continue
 		}
+		trigrams[t]++
 	}
 
 	vs := getValSorter(trigrams)
@@ -42,9 +51,9 @@ func GetOrderedModel(content string) []string {
 	return vs.keys
 }
 
-func getValSorter(m map[string]int) *valSorter {
+func getValSorter(m map[Tg]int) *valSorter {
 	vs := &valSorter{
-		keys:   make([]string, 0, len(m)),
+		keys:   make([]Tg, 0, len(m)),
 		values: make([]int, 0, len(m)),
 	}
 

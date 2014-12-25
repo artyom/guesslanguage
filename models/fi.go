@@ -1,7 +1,7 @@
 package models
 
 func init() {
-	models["fi"] = map[string]int{
+	models["fi"] = compact(map[string]int{
 		"en ": 0,
 		"in ": 1,
 		"an ": 2,
@@ -301,5 +301,5 @@ func init() {
 		"kuu": 296,
 		"n y": 297,
 		"set": 298,
-		"sim": 299}
+		"sim": 299})
 }
