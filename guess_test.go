@@ -25,18 +25,20 @@ func Benchmark_Guess(b *testing.B) {
 
 func Test_getRuns(t *testing.T) {
 	var (
-		words []string
+		words [][]rune
 		runs  []*unicode.RangeTable
 	)
 
-	words = strings.Split("This is a test of the language checker", " ")
+	for _, s := range strings.Split("This is a test of the language checker", " ") {
+		words = append(words, []rune(s))
+	}
 	runs = getRuns(words)
 
 	if !keyExists(unicode.Latin, runs) {
 		t.Errorf("Runs must contain 'Latin'")
 	}
 
-	words = strings.Split("abcdééé", " ")
+	words = append(words[:0], []rune("abcdééé"))
 	runs = getRuns(words)
 	if len(runs) != 1 || !keyExists(unicode.Latin, runs) {
 		t.Errorf("Runs must contain 'Latin'")
@@ -45,7 +47,10 @@ func Test_getRuns(t *testing.T) {
 	s := "Сайлау нәтижесінде дауыстардың басым бөлігін ел премьер " +
 		"министрі Виктор Янукович пен оның қарсыласы, оппозиция " +
 		"жетекшісі Виктор Ющенко алды."
-	words = strings.Split(s, " ")
+	words = words[:0]
+	for _, s := range strings.Split(s, " ") {
+		words = append(words, []rune(s))
+	}
 	runs = getRuns(words)
 	if !keyExists(unicode.Cyrillic, runs) {
 		t.Errorf("Runs musts contain 'Cyrillic'")
@@ -63,17 +68,20 @@ func tg(s string) models.Tg {
 func Test_GetOrderedModel(t *testing.T) {
 	var om []models.Tg
 
-	om = models.GetOrderedModel("abc")
+	om = models.GetOrderedModel([][]rune{[]rune("abc")})
 	if len(om) != 1 || !hasElem(tg("abc"), om) {
+		for _, item := range om {
+			t.Log("item is: ", string(item[:]))
+		}
 		t.Errorf("Model must be [abc]")
 	}
 
-	om = models.GetOrderedModel("abca")
+	om = models.GetOrderedModel([][]rune{[]rune("abca")})
 	if len(om) != 2 || !hasElem(tg("abc"), om) || !hasElem(tg("bca"), om) {
 		t.Errorf("Model must be [abc bca]")
 	}
 
-	om = models.GetOrderedModel("abcabdcab")
+	om = models.GetOrderedModel([][]rune{[]rune("abcabdcab")})
 	if len(om) != 6 ||
 		!hasElem(tg("cab"), om) ||
 		!hasElem(tg("abc"), om) ||

@@ -33,17 +33,34 @@ func GetModels() map[string]map[Tg]int {
 }
 
 // Create a list of trigrams in content sorted by frequency.
-func GetOrderedModel(content string) []Tg {
-	trigrams := make(map[Tg]int, len(content)/3)
+func GetOrderedModel(words [][]rune) []Tg {
+	l := len(words) - 1
+	for _, word := range words {
+		l += len(word)
+	}
+	trigrams := make(map[Tg]int, l/3)
 	var r0, r1 rune
-	for i, r := range content {
-		r = unicode.ToLower(r)
-		t := Tg{r0, r1, r}
-		r0, r1 = r1, r
-		if i < 2 {
-			continue
+	i := 0
+	for _, word := range words {
+		for _, r := range word {
+			r = unicode.ToLower(r)
+			t := Tg{r0, r1, r}
+			r0, r1 = r1, r
+			i++
+			if i < 3 {
+				continue
+			}
+			trigrams[t]++
 		}
-		trigrams[t]++
+		if i < l {
+			t := Tg{r0, r1, ' '}
+			r0, r1 = r1, ' '
+			i++
+			if i < 3 {
+				continue
+			}
+			trigrams[t]++
+		}
 	}
 
 	vs := getValSorter(trigrams)

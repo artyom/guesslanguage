@@ -7,7 +7,6 @@ package guesslanguage
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -32,7 +31,6 @@ func init() {
 
 var (
 	knownScripts    []*unicode.RangeTable
-	regexWords      *regexp.Regexp
 	maxLength       int      = 4096
 	maxDistance     int      = maxLength * 300
 	minLength       int      = 20
@@ -303,23 +301,34 @@ var (
 		"zh_TW": 22}
 )
 
-func init() {
-	regexWords = regexp.MustCompile(`(?:[^\d\s_-]|['])+`)
-}
-
 // Return the ISO 639-1 language code.
 func Guess(text string) (result string, err error) {
 	if !utf8.ValidString(text) {
 		return result, errors.New("Input string contains invalid UTF-8-encoded runes")
 	}
-
-	runed := []rune(text)
-
-	if len(runed) > maxLength {
-		runed = runed[:maxLength]
+	words := make([][]rune, 0)
+	wrd := make([]rune, 0, 10)
+	cnt := 0
+runeExtract:
+	for _, r := range text {
+		switch {
+		case cnt > maxLength:
+			break runeExtract
+		case r == '’':
+			wrd = append(wrd, '\'')
+		case unicode.IsLetter(r):
+			wrd = append(wrd, r)
+		case unicode.IsSpace(r):
+			words = append(words, wrd)
+			wrd = make([]rune, 0, 10)
+		default:
+			continue
+		}
+		cnt++
 	}
-
-	words := regexWords.FindAllString(strings.Replace(string(runed), "’", "'", -1), -1)
+	if len(wrd) > 0 {
+		words = append(words, wrd)
+	}
 
 	return guessLanguage(words, getRuns(words)), nil
 }
@@ -347,7 +356,7 @@ func GuessName(text string) string {
 }
 
 // Identify the language.
-func guessLanguage(words []string, scripts []*unicode.RangeTable) string {
+func guessLanguage(words [][]rune, scripts []*unicode.RangeTable) string {
 	if keyExists(unicode.Hangul, scripts) {
 		return "ko"
 	}
@@ -397,7 +406,7 @@ func guessLanguage(words []string, scripts []*unicode.RangeTable) string {
 }
 
 // Count the number of characters in each character block
-func getRuns(words []string) (relevantRuns []*unicode.RangeTable) {
+func getRuns(words [][]rune) (relevantRuns []*unicode.RangeTable) {
 	type scriptFreq struct {
 		block *unicode.RangeTable
 		cnt   int
@@ -461,16 +470,18 @@ func keyExists(a *unicode.RangeTable, list []*unicode.RangeTable) bool {
 }
 
 // Check words against known models
-func getFromModel(words []string, languages []string) (result string) {
-	sample := strings.Join(words, " ")
-
-	if len([]rune(sample)) < minLength {
+func getFromModel(words [][]rune, languages []string) (result string) {
+	l := len(words) - 1
+	for _, word := range words {
+		l += len(word)
+	}
+	if l < minLength {
 		return unknownLanguage
 	}
 
 	var (
 		scores  map[string]int = make(map[string]int, len(languages))
-		model                  = models.GetOrderedModel(sample)
+		model                  = models.GetOrderedModel(words)
 		minimal int            = maxDistance
 	)
 
