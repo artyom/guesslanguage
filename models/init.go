@@ -2,7 +2,7 @@ package models
 
 import (
 	"sort"
-	"strings"
+	"unicode"
 )
 
 var models = make(map[string]map[Tg]int)
@@ -36,7 +36,8 @@ func GetModels() map[string]map[Tg]int {
 func GetOrderedModel(content string) []Tg {
 	trigrams := make(map[Tg]int, len(content)/3)
 	var r0, r1 rune
-	for i, r := range strings.ToLower(content) {
+	for i, r := range content {
+		r = unicode.ToLower(r)
 		t := Tg{r0, r1, r}
 		r0, r1 = r1, r
 		if i < 2 {
